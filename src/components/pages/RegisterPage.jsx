@@ -8,9 +8,10 @@ function RegisterPage() {
     const { login } = useAuth(); // Lấy hàm login để dùng cho Google
 
     const [form, setForm] = useState({
-        userName: "",
+        username: "",
         email: "",
         password: "",
+        phone: "",  
         confirmPassword: "",
     });
 
@@ -37,10 +38,11 @@ function RegisterPage() {
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
                     body: JSON.stringify({
-                        userName: form.userName,
+                        username: form.username,
                         password: form.password,
                         confirmPassword: form.confirmPassword,
-                        email: form.email
+                        email: form.email,
+                        phone: form.phone
                     }),
                 }
             );
@@ -65,7 +67,7 @@ function RegisterPage() {
             // "Nếu chưa có tk -> Tự tạo -> Login"
             // "Nếu có tk rồi -> Login luôn"
             const res = await fetch(
-                "https://localhost:7111/api/Authenticate/login-google",
+                "http://localhost:8080/api/Authenticate/login-google",
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -94,7 +96,7 @@ function RegisterPage() {
                     <div className="mb-3">
                         <input
                             className="form-control"
-                            name="userName"
+                            name="username"
                             placeholder="Tên đăng nhập"
                             onChange={handleChange}
                             required
@@ -111,7 +113,19 @@ function RegisterPage() {
                             required
                         />
                     </div>
-
+                    <div className="mb-3">
+                        <input
+                            type="tel"
+                            className="form-control"
+                            name="phone"
+                            placeholder="Số điện thoại"
+                            onChange={handleChange}
+                            pattern="[0-9]{10}"
+                            maxLength="10"
+                            title="Số điện thoại phải gồm đúng 10 chữ số"
+                            required
+                        />
+                    </div>
                     <div className="mb-3">
                         <input
                             type="password"

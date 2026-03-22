@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 const BookingManagement = () => {
@@ -34,6 +34,7 @@ const BookingManagement = () => {
     const [showCreateBookingModal, setShowCreateBookingModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false); 
     const [isDeleting, setIsDeleting] = useState(false); 
+    const [updatingStatus, setUpdatingStatus] = useState(false); 
 
     const [services, setServices] = useState([]);
     const [selectedServices, setSelectedServices] = useState([]);
@@ -51,7 +52,11 @@ const BookingManagement = () => {
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [confirming, setConfirming] = useState(false);
+    
+    const [serviceError, setServiceError] = useState(null);
+    const [petError, setPetError] = useState(null);
     const [slotError, setSlotError] = useState(null);
+    
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [showAddPetModal, setShowAddPetModal] = useState(false);
     const [newBookingResult, setNewBookingResult] = useState(null);
@@ -122,69 +127,34 @@ const BookingManagement = () => {
     }, [newBookingDate, selectedServices]);
 
     // =========================================================================
-    // LOGIC CAMERA SCANNER (CHỈ QUÉT MÃ QR)
+    // LOGIC CAMERA SCANNER 
     // =========================================================================
     useEffect(() => {
         let html5QrcodeScanner = null;
-
         if (showScannerModal) {
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }, // Mã QR là hình vuông
-                formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] // Chỉ quét mã QR để tăng tốc độ
-            };
-
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader",
-                config,
-                false
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] };
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
+            html5QrcodeScanner.render(
+                (decodedText) => { html5QrcodeScanner.clear(); setShowScannerModal(false); fetchBookingByCode(decodedText); },
+                (error) => { }
             );
-
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-
-            function onScanSuccess(decodedText) {
-                // Quét thành công, tắt camera và đóng modal
-                html5QrcodeScanner.clear();
-                setShowScannerModal(false);
-                fetchBookingByCode(decodedText); // Gọi API lấy thông tin
-            }
-
-            function onScanFailure(error) {
-                // Camera quét liên tục, bỏ qua các frame không có mã
-            }
         }
-
-        // Cleanup function khi component unmount hoặc khi đóng modal
-        return () => {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().catch(e => console.error("Lỗi khi tắt camera: ", e));
-            }
-        };
+        return () => { if (html5QrcodeScanner) { html5QrcodeScanner.clear().catch(e => console.error(e)); } };
     }, [showScannerModal]);
 
-    // Lấy chi tiết Booking theo Mã sau khi Camera quét được
     const fetchBookingByCode = async (code) => {
         try {
             setIsScanningAPI(true);
             const response = await fetch(`http://localhost:8080/api/bookings/code/${code}`, { credentials: 'include' });
             const result = await response.json();
-
             if (response.ok && result.success && result.data) {
-                setSelectedBooking(result.data);
-                setShowDetailModal(true); // Hiển thị Bảng Chi tiết đặt lịch
-                showToast('Quét mã thành công!', 'success');
-            } else {
-                throw new Error(result.message || 'Không tìm thấy lịch hẹn trùng khớp!');
-            }
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setIsScanningAPI(false);
-        }
+                setSelectedBooking(result.data); setShowDetailModal(true); showToast('Quét mã thành công!', 'success');
+            } else throw new Error(result.message || 'Không tìm thấy lịch hẹn trùng khớp!');
+        } catch (err) { showToast(err.message, 'error'); } finally { setIsScanningAPI(false); }
     };
 
     // =========================================================================
-    // HÀM XỬ LÝ KHÁC (API CALLS)
+    // HÀM XỬ LÝ API 
     // =========================================================================
 
     const handleSearchUser = async (e) => {
@@ -195,8 +165,7 @@ const BookingManagement = () => {
             const response = await fetch(`http://localhost:8080/api/user/search?phone=${searchPhone}`);
             const result = await response.json();
             if (response.ok && result.success) {
-                setFoundUser(result.data);
-                showToast(`Tìm thấy khách hàng: ${result.data.username}`, 'success');
+                setFoundUser(result.data); showToast(`Tìm khách hàng: ${result.data.username}`, 'success');
             } else throw new Error(result.message || 'Không tìm thấy khách hàng!');
         } catch (err) { setUserSearchError(err.message); } finally { setSearchingUser(false); }
     };
@@ -206,15 +175,8 @@ const BookingManagement = () => {
             setLoading(true);
             const startDate = formatDateForAPI(selectedWeekStart);
             const response = await fetch(`http://localhost:8080/api/bookings/bookings-in-week?startDate=${startDate}`, { credentials: 'include' });
-            if (response.ok) {
-                const result = await response.json();
-                setBookings(result || []);
-            }
-        } catch (error) {
-            showToast('Không thể tải dữ liệu lịch!', 'error');
-        } finally {
-            setLoading(false);
-        }
+            if (response.ok) { const result = await response.json(); setBookings(result || []); }
+        } catch (error) { showToast('Không thể tải dữ liệu lịch!', 'error'); } finally { setLoading(false); }
     };
 
     const handleBookingClick = async (bookingId) => {
@@ -223,16 +185,21 @@ const BookingManagement = () => {
             const response = await fetch(`http://localhost:8080/api/bookings/${bookingId}`, { credentials: 'include' });
             if (response.ok) {
                 const result = await response.json();
-                if (result.success && result.data) {
-                    setSelectedBooking(result.data);
-                    setShowDetailModal(true);
-                }
-            } else {
-                showToast('Không thể tải thông tin đặt lịch!', 'error');
-            }
-        } catch (error) {
-            showToast('Có lỗi xảy ra!', 'error');
-        }
+                if (result.success && result.data) { setSelectedBooking(result.data); setShowDetailModal(true); }
+            } else showToast('Không thể tải thông tin!', 'error');
+        } catch (error) { showToast('Có lỗi xảy ra!', 'error'); }
+    };
+
+    const handleUpdateStatus = async (action) => {
+        try {
+            setUpdatingStatus(true);
+            const response = await fetch(`http://localhost:8080/api/bookings/${selectedBooking.id}/${action}`, { method: 'POST', credentials: 'include' });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                showToast(`Cập nhật trạng thái thành công!`, 'success');
+                setShowDetailModal(false); fetchBookings(); 
+            } else throw new Error(result.message || 'Cập nhật thất bại');
+        } catch (err) { showToast(err.message, 'error'); } finally { setUpdatingStatus(false); }
     };
 
     const handleDeleteBooking = async () => {
@@ -242,16 +209,38 @@ const BookingManagement = () => {
             const response = await fetch(`http://localhost:8080/api/bookings/${selectedBooking.id}`, { method: 'DELETE' });
             const result = await response.json();
             if (response.ok && result.success) {
-                showToast('Đã xóa lịch hẹn thành công', 'success');
-                setShowDetailModal(false);
-                fetchBookings(); 
-            } else {
-                throw new Error(result.message);
+                showToast('Đã xóa thành công', 'success'); setShowDetailModal(false); fetchBookings(); 
+            } else throw new Error(result.message);
+        } catch (err) { showToast(err.message || 'Lỗi khi xóa', 'error'); } finally { setIsDeleting(false); }
+    };
+
+    // =========================================================================
+    // XỬ LÝ LẤY DỊCH VỤ THEO PET TYPE
+    // =========================================================================
+
+    const fetchServicesByPetType = async (petTypeId) => {
+        try {
+            setLoadingServices(true); setServiceError(null);
+            const response = await fetch(`http://localhost:8080/api/service/pet-type/${petTypeId}`);
+            if (!response.ok) throw new Error('Không thể tải danh sách dịch vụ phù hợp.');
+            const data = await response.json();
+            setServices(data.data || data); 
+        } catch (err) { setServiceError(err.message); setServices([]); } finally { setLoadingServices(false); }
+    };
+
+    const handlePetChange = (e) => {
+        const pId = e.target.value;
+        setSelectedPet(pId);
+        setSelectedServices([]); 
+        setSelectedSlot(null);   
+        
+        if (pId) {
+            const pet = pets.find(p => String(p.id) === String(pId));
+            if (pet && pet.petTypeId) {
+                fetchServicesByPetType(pet.petTypeId);
             }
-        } catch (err) {
-            showToast(err.message || 'Lỗi khi xóa lịch hẹn', 'error');
-        } finally {
-            setIsDeleting(false);
+        } else {
+            setServices([]); // Nếu không chọn pet nào thì xóa danh sách dịch vụ
         }
     };
 
@@ -261,24 +250,28 @@ const BookingManagement = () => {
         setFoundUser({ id: selectedBooking.userId, username: selectedBooking.userName, phone: '' });
         
         try {
-            const [servicesRes, petsRes] = await Promise.all([
-                fetch('http://localhost:8080/api/service'),
-                fetch(`http://localhost:8080/api/pet/user/${selectedBooking.userId}`)
-            ]);
-            
-            const servicesData = await servicesRes.json();
+            // Chỉ fetch Pet trước
+            const petsRes = await fetch(`http://localhost:8080/api/pet/user/${selectedBooking.userId}`);
             const petsData = await petsRes.json();
-            
-            const allServices = servicesData.data || servicesData;
             const allPets = petsData.data || petsData;
-            
-            setServices(allServices);
             setPets(allPets);
+            
+            // Tìm con Pet đang được chọn trong Booking cũ
+            const currentPet = allPets.find(p => String(p.id) === String(selectedBooking.petId));
+            setSelectedPet(selectedBooking.petId);
+
+            // Fetch Dịch vụ tương ứng với con Pet đó
+            let allServices = [];
+            if (currentPet && currentPet.petTypeId) {
+                const srvRes = await fetch(`http://localhost:8080/api/service/pet-type/${currentPet.petTypeId}`);
+                const srvData = await srvRes.json();
+                allServices = srvData.data || srvData;
+                setServices(allServices);
+            }
             
             setNotes(selectedBooking.notes || '');
             const dateStr = new Date(selectedBooking.scheduledAt).toISOString().split('T')[0];
             setNewBookingDate(dateStr);
-            setSelectedPet(selectedBooking.petId);
             
             if (selectedBooking.services) {
                 const matchedServices = allServices.filter(s => 
@@ -297,19 +290,11 @@ const BookingManagement = () => {
     const handleOpenCreateBooking = () => {
         setIsEditMode(false);
         setShowCreateBookingModal(true);
-        fetchServices();
         fetchUserPets(foundUser.id);
+        
+        // Reset form toàn bộ (Dịch vụ sẽ trống cho đến khi chọn Pet)
+        setServices([]);
         setSelectedServices([]); setSelectedPet(''); setNewBookingDate(''); setSelectedSlot(null); setNotes('');
-    };
-
-    const fetchServices = async () => {
-        try {
-            setLoadingServices(true);
-            const response = await fetch('http://localhost:8080/api/service');
-            if (!response.ok) throw new Error('Không thể tải danh sách dịch vụ');
-            const data = await response.json();
-            setServices(data.data || data); 
-        } catch (err) { } finally { setLoadingServices(false); }
     };
 
     const fetchUserPets = async (userId) => {
@@ -336,10 +321,7 @@ const BookingManagement = () => {
             const totalDuration = selectedServices.reduce((sum, service) => sum + service.durationInMinutes, 0);
             const response = await fetch(`http://localhost:8080/api/bookings/available-slots?selectedDay=${newBookingDate}&durationInMinutes=${totalDuration}`);
             const result = await response.json();
-            if (response.ok && result.success) {
-                console.log('Available slots:', result.data);
-                setAvailableSlots(result.data);
-            }
+            if (response.ok && result.success) setAvailableSlots(result.data);
             else throw new Error(result.message);
         } catch (err) { setSlotError(err.message); setAvailableSlots([]); } finally { setLoadingSlots(false); }
     };
@@ -512,7 +494,6 @@ const BookingManagement = () => {
                     </div>
                 </div>
 
-                {/* MODULE CAMERA QUÉT MÃ QR (ĐÃ BỎ Ô INPUT) */}
                 <div className="col-md-6">
                     <div className="card shadow-sm border-success h-100" style={{ borderTopWidth: '4px' }}>
                         <div className="card-header bg-white fw-bold">
@@ -723,26 +704,44 @@ const BookingManagement = () => {
                                     <div className="mt-3"><h6 className="fw-bold"><i className="fas fa-sticky-note me-2"></i>Ghi chú:</h6><div className="alert alert-info mb-0"><i className="fas fa-info-circle me-2"></i>{selectedBooking.notes}</div></div>
                                 )}
                             </div>
+                            
+                            {/* --- KHU VỰC NÚT ĐIỀU KHIỂN DƯỚI CÙNG --- */}
                             <div className="modal-footer d-flex justify-content-between bg-light">
                                 <div>
-                                    <button type="button" className="btn btn-outline-danger me-2 fw-bold" onClick={handleDeleteBooking} disabled={isDeleting}>
-                                        {isDeleting ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="fas fa-trash-alt me-2"></i>}
-                                        Xóa lịch
-                                    </button>
-                                    <button type="button" className="btn btn-outline-primary fw-bold" onClick={handleOpenEditBooking}>
-                                        <i className="fas fa-edit me-2"></i>Chỉnh sửa
-                                    </button>
+                                    {(selectedBooking.bookingStatus === 0 || selectedBooking.bookingStatus === 1) && (
+                                        <>
+                                            <button type="button" className="btn btn-outline-danger me-2 fw-bold" onClick={handleDeleteBooking} disabled={isDeleting || updatingStatus}>
+                                                {isDeleting ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="fas fa-trash-alt me-2"></i>}
+                                                Xóa lịch
+                                            </button>
+                                            <button type="button" className="btn btn-outline-primary fw-bold" onClick={handleOpenEditBooking} disabled={updatingStatus}>
+                                                <i className="fas fa-edit me-2"></i>Chỉnh sửa
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>Đóng</button>
+                                <div>
+                                    {selectedBooking.bookingStatus === 1 && (
+                                        <button type="button" className="btn btn-info fw-bold me-2 text-white" onClick={() => handleUpdateStatus('start')} disabled={updatingStatus}>
+                                            {updatingStatus ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="fas fa-play me-2"></i>}
+                                            Bắt đầu làm
+                                        </button>
+                                    )}
+                                    {selectedBooking.bookingStatus === 2 && (
+                                        <button type="button" className="btn btn-success fw-bold me-2" onClick={() => handleUpdateStatus('complete')} disabled={updatingStatus}>
+                                            {updatingStatus ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="fas fa-check-double me-2"></i>}
+                                            Hoàn thành
+                                        </button>
+                                    )}
+                                    <button type="button" className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>Đóng</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* =========================================================================
-                MODAL MỞ CAMERA QUÉT MÃ QR (MỚI TẠO)
-            ========================================================================= */}
+            {/* MODAL CAMERA QUÉT QR */}
             {showScannerModal && (
                 <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1060 }}>
                     <div className="modal-dialog modal-dialog-centered">
@@ -752,7 +751,6 @@ const BookingManagement = () => {
                                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowScannerModal(false)}></button>
                             </div>
                             <div className="modal-body p-0 bg-dark text-center position-relative">
-                                {/* Thẻ div này là nơi thư viện html5-qrcode sẽ render luồng camera */}
                                 <div id="reader" style={{ width: '100%', minHeight: '300px' }}></div>
                                 <div className="position-absolute bottom-0 w-100 p-3 bg-dark bg-opacity-75">
                                     <p className="text-white mb-0 small">Đưa mã QR trên điện thoại/giấy của khách vào giữa khung hình.</p>
@@ -763,9 +761,7 @@ const BookingManagement = () => {
                 </div>
             )}
 
-            {/* =========================================================================
-                MODAL LỚN: TẠO/SỬA LỊCH (DÙNG CHUNG FORM)
-            ========================================================================= */}
+            {/* MODAL TẠO/SỬA LỊCH */}
             {showCreateBookingModal && (
                 <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1040, overflowY: 'auto' }}>
                     <div className="modal-dialog modal-xl modal-dialog-scrollable">
@@ -800,7 +796,7 @@ const BookingManagement = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="d-flex gap-2">
-                                                            <select className="form-select" value={selectedPet} onChange={(e) => setSelectedPet(e.target.value)}>
+                                                            <select className="form-select" value={selectedPet} onChange={handlePetChange}>
                                                                 <option value="">-- Chọn thú cưng của khách --</option>
                                                                 {pets.map(pet => <option key={pet.id} value={pet.id}>{pet.name} ({pet.age} tuổi)</option>)}
                                                             </select>
@@ -812,11 +808,18 @@ const BookingManagement = () => {
                                                 {/* Service Selection */}
                                                 <div className="mb-4">
                                                     <label className="form-label fw-bold text-secondary">2. Dịch vụ Spa <span className="text-danger">*</span></label>
-                                                    <div>
-                                                        <button type="button" className="btn btn-outline-primary" onClick={() => setShowServiceModal(true)}>
-                                                            <i className="fas fa-plus me-1"></i> Chọn dịch vụ
-                                                        </button>
-                                                    </div>
+                                                    
+                                                    {/* Chỉ hiện nút chọn dịch vụ khi đã chọn Pet */}
+                                                    {!selectedPet ? (
+                                                        <div className="text-muted small fst-italic">Vui lòng chọn Thú cưng trước để xem các dịch vụ phù hợp.</div>
+                                                    ) : (
+                                                        <div>
+                                                            <button type="button" className="btn btn-outline-primary" onClick={() => setShowServiceModal(true)}>
+                                                                <i className="fas fa-plus me-1"></i> Chọn dịch vụ
+                                                            </button>
+                                                        </div>
+                                                    )}
+
                                                     {selectedServices.length > 0 && (
                                                         <div className="d-flex flex-wrap gap-2 mt-3 p-3 bg-light rounded border">
                                                             {selectedServices.map(service => (
@@ -882,7 +885,7 @@ const BookingManagement = () => {
                 </div>
             )}
 
-            {/* MODALS CON CỦA FORM TẠO LỊCH */}
+            {/* MODAL CHỌN DỊCH VỤ */}
             {showServiceModal && (
                 <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
                     <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -894,6 +897,10 @@ const BookingManagement = () => {
                             <div className="modal-body p-0">
                                 {loadingServices ? (
                                     <div className="text-center py-5"><span className="spinner-border text-primary"></span></div>
+                                ) : serviceError ? (
+                                    <div className="alert alert-danger m-3">{serviceError}</div>
+                                ) : services.length === 0 ? (
+                                    <div className="alert alert-warning m-3">Không có dịch vụ nào phù hợp với thú cưng này.</div>
                                 ) : (
                                     <table className="table table-hover mb-0">
                                         <thead className="table-light"><tr><th className="ps-4">Chọn</th><th>Tên dịch vụ</th><th>Giá</th><th>Thời lượng</th></tr></thead>
@@ -918,6 +925,7 @@ const BookingManagement = () => {
                 </div>
             )}
 
+            {/* CÁC MODAL KHÁC (THÊM PET, CONFIRM, SUCCESS) */}
             {showAddPetModal && (
                 <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
                     <div className="modal-dialog modal-dialog-centered">

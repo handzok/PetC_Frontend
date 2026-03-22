@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
-
-// Import thư viện jwt-decode
-import { jwtDecode } from "jwt-decode"; 
-
+import { jwtDecode } from "jwt-decode"; // Kiểm tra biến môi trường có được đọc đúng không
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,13 +19,10 @@ function LoginPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // --- HÀM XỬ LÝ CHUNG ---
+  // --- HÀM XỬ LÝ CHUNG CHO CẢ ĐĂNG NHẬP THƯỜNG & GOOGLE ---
   const handleLoginSuccess = async (response) => {
     if (response.ok) {
       try {
@@ -38,13 +32,8 @@ function LoginPage() {
         if (data && data.token) {
           try {
             const decoded = jwtDecode(data.token);
-            console.log("Dữ liệu Token sau khi giải mã:", decoded);
-
             let tokenRole = decoded?.role || decoded?.roles || decoded?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-
-            if (Array.isArray(tokenRole)) {
-              tokenRole = tokenRole[0];
-            }
+            if (Array.isArray(tokenRole)) tokenRole = tokenRole[0];
 
             login({
               userId: decoded?.sub || data.userId || data.id, 
@@ -67,7 +56,6 @@ function LoginPage() {
           alert(result?.message || "Đăng nhập thất bại: Không nhận được token");
         }
       } catch (error) {
-        console.error("Parse response error:", error);
         alert("Lỗi hệ thống");
       }
     } else {
@@ -78,18 +66,19 @@ function LoginPage() {
         alert("Đăng nhập thất bại");
       }
     }
-
     setLoading(false);
   };
 
+  // --- XỬ LÝ GOOGLE LOGIN ---
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/Authenticate/login-google", {
+      // Gửi Google Token (credential) xuống Backend của bạn
+      const res = await fetch("http://localhost:8080/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ credential: credentialResponse.credential }),
+        body: JSON.stringify({ token: credentialResponse.credential }),
       });
 
       await handleLoginSuccess(res);
@@ -103,23 +92,14 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const payload = {
-        username: form.username,
-        password: form.password,
-      };
-
       const res = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ username: form.username, password: form.password }),
       });
-
       await handleLoginSuccess(res);
     } catch (error) {
-      console.error("Lỗi kết nối Server:", error);
       alert("Không thể kết nối tới Server");
       setLoading(false);
     }
@@ -133,50 +113,22 @@ function LoginPage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-3 text-start">
             <label className="form-label fw-bold">Tên đăng nhập</label>
-            <input
-              className="form-control"
-              name="username"
-              placeholder="Nhập username"
-              onChange={handleChange}
-              disabled={loading}
-              required
-              autoComplete="username"
-              value={form.username}
-            />
+            <input className="form-control" name="username" placeholder="Nhập username" onChange={handleChange} disabled={loading} required autoComplete="username" value={form.username} />
           </div>
 
           <div className="mb-3 text-start">
             <label className="form-label fw-bold">Mật khẩu</label>
-            <input
-              type="password"
-              className="form-control"
-              name="password"
-              placeholder="Nhập mật khẩu"
-              onChange={handleChange}
-              disabled={loading}
-              required
-              autoComplete="current-password"
-              value={form.password}
-            />
+            <input type="password" className="form-control" name="password" placeholder="Nhập mật khẩu" onChange={handleChange} disabled={loading} required autoComplete="current-password" value={form.password} />
           </div>
 
           <button className="btn btn-primary w-100 mb-3 py-2 fw-bold" disabled={loading}>
-            {loading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2"></span>
-                Đang xử lý...
-              </>
-            ) : (
-              "ĐĂNG NHẬP"
-            )}
+            {loading ? <><span className="spinner-border spinner-border-sm me-2"></span>Đang xử lý...</> : "ĐĂNG NHẬP"}
           </button>
         </form>
 
         <div className="position-relative my-4">
           <hr />
-          <span className="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">
-            hoặc đăng nhập bằng
-          </span>
+          <span className="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">hoặc đăng nhập bằng</span>
         </div>
 
         <div className="d-flex justify-content-center mb-3">
@@ -191,9 +143,7 @@ function LoginPage() {
 
         <div className="text-center">
           <span className="text-muted">Chưa có tài khoản? </span>
-          <Link to="/register" className="text-decoration-none fw-bold">
-            Đăng ký ngay
-          </Link>
+          <Link to="/register" className="text-decoration-none fw-bold">Đăng ký ngay</Link>
         </div>
       </div>
     </div>

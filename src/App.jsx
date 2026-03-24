@@ -21,6 +21,7 @@ import StaffManagement from './components/pages/admin/StaffManagement';
 import ServiceManagement from './components/pages/admin/ServiceManagement';
 import BookingManagement from './components/pages/admin/BookingManagement';
 import RevenueManagement from './components/pages/admin/RevenueManagement';
+import StatisticManagement from './components/pages/admin/StatisticManagement';
 function About() {
     return <h1>About Page</h1>;
 }
@@ -121,7 +122,7 @@ function App() {
                         <Route path="pet-types" element={<PetTypeManagement />} />
                         <Route path="staff" element={<StaffManagement />} />
                         <Route path="revenue" element={<RevenueManagement />} />
-                        <Route path="reports" element={<div>Báo cáo</div>} />
+                        <Route path="reports" element={<StatisticManagement />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

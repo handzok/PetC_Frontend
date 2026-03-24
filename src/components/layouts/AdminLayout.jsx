@@ -84,6 +84,13 @@ const AdminLayout = () => {
                                     Quản lý quyền tài khoản
                                 </NavLink>
                                 <NavLink
+                                    to="/admin/articles"
+                                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                                >
+                                    <div className="sb-nav-link-icon"><i className="fas fa-newspaper"></i></div>
+                                    Quản lý Cẩm nang
+                                </NavLink>
+                                <NavLink
                                     to="/admin/services"
                                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                                 >

@@ -35,6 +35,11 @@ function Header() {
                             </NavLink>
                         </li>
                         <li className="nav-item">
+                            <NavLink to="/articles" className="nav-link">
+                                Cẩm nang
+                            </NavLink>
+                        </li>
+                        <li className="nav-item">
                             <NavLink to="/booking" className="nav-link">
                                 Đặt ngay
                             </NavLink>

@@ -22,6 +22,9 @@ import ServiceManagement from './components/pages/admin/ServiceManagement';
 import BookingManagement from './components/pages/admin/BookingManagement';
 import RevenueManagement from './components/pages/admin/RevenueManagement';
 import UserManagement from './components/pages/admin/UserManagement';
+import ArticleManagement from './components/pages/admin/ArticleManagement';
+import ArticleList from './components/pages/ArticleList'; 
+import ArticleDetail from './components/pages/ArticleDetail';
 function About() {
     return <h1>About Page</h1>;
 }
@@ -56,6 +59,20 @@ function App() {
                             <ProtectedRoute>
                                 <BookingPage />
                             </ProtectedRoute>
+                            <Footer />
+                        </>
+                    } />
+                    <Route path="/articles" element={
+                        <>
+                            <Header />
+                            <ArticleList />
+                            <Footer />
+                        </>
+                    } />
+                    <Route path="/articles/:id" element={
+                        <>
+                            <Header />
+                            <ArticleDetail />
                             <Footer />
                         </>
                     } />
@@ -124,6 +141,7 @@ function App() {
                         <Route path="staff" element={<StaffManagement />} />
                         <Route path="revenue" element={<RevenueManagement />} />
                         <Route path="reports" element={<div>Báo cáo</div>} />
+                        <Route path="articles" element={<ArticleManagement />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

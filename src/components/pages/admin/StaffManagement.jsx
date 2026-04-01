@@ -74,7 +74,7 @@ const StaffManagement = () => {
       if (search) params.append("search", search);
 
       const response = await fetch(
-        `http://localhost:8080/api/staff/paginated?${params}`,
+        `/api/staff/paginated?${params}`,
         { credentials: "include" },
       );
 
@@ -135,7 +135,7 @@ const StaffManagement = () => {
 
   const handleView = async (id) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/staff/${id}`, {
+      const response = await fetch(`/api/staff/${id}`, {
         credentials: "include",
       });
       if (response.ok) {
@@ -169,7 +169,7 @@ const StaffManagement = () => {
     });
     setImagePreview(
       staffMember.profilePictureUrl
-        ? `http://localhost:8080${staffMember.profilePictureUrl}`
+        ? `${staffMember.profilePictureUrl}`
         : null,
     );
     setShowModal(true);
@@ -199,7 +199,7 @@ const StaffManagement = () => {
       const formDataUpload = new FormData();
       formDataUpload.append("file", file);
 
-      const response = await fetch("http://localhost:8080/api/upload", {
+      const response = await fetch("/api/upload", {
         method: "POST",
         credentials: "include",
         body: formDataUpload,
@@ -208,7 +208,7 @@ const StaffManagement = () => {
       const result = await response.json();
       if (response.ok && result.success) {
         setFormData((prev) => ({ ...prev, profilePictureUrl: result.data }));
-        setImagePreview(`http://localhost:8080${result.data}`);
+        setImagePreview(`${result.data}`);
         showToast("Tải ảnh lên thành công!", "success");
       } else {
         showToast(result.message || "Upload ảnh thất bại!", "error");
@@ -240,7 +240,7 @@ const StaffManagement = () => {
       let response;
       if (editingStaff) {
         response = await fetch(
-          `http://localhost:8080/api/staff/${editingStaff.id}`,
+          `/api/staff/${editingStaff.id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -249,7 +249,7 @@ const StaffManagement = () => {
           },
         );
       } else {
-        response = await fetch(`http://localhost:8080/api/staff`, {
+        response = await fetch(`/api/staff`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -287,7 +287,7 @@ const StaffManagement = () => {
     showConfirm(`Bạn có chắc muốn ${action} nhân viên này?`, async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/api/staff/toggle-active?id=${staffMember.id}`,
+          `/api/staff/toggle-active?id=${staffMember.id}`,
           { method: "PATCH", credentials: "include" },
         );
         const result = await response.json();
@@ -308,7 +308,7 @@ const StaffManagement = () => {
     showConfirm("Bạn có chắc muốn xóa nhân viên này?", async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/api/staff/${staffMember.id}`,
+          `/api/staff/${staffMember.id}`,
           { method: "DELETE", credentials: "include" },
         );
         const result = await response.json();
@@ -495,7 +495,7 @@ const StaffManagement = () => {
                         <td className="text-center">
                           {s.profilePictureUrl ? (
                             <img
-                              src={`http://localhost:8080${s.profilePictureUrl}`}
+                              src={`${s.profilePictureUrl}`}
                               alt={s.fullName}
                               className="rounded-circle"
                               style={{
@@ -951,7 +951,7 @@ const StaffManagement = () => {
                   <div className="col-md-4 text-center">
                     {viewingStaff.profilePictureUrl ? (
                       <img
-                        src={`http://localhost:8080${viewingStaff.profilePictureUrl}`}
+                        src={`${viewingStaff.profilePictureUrl}`}
                         alt={viewingStaff.fullName}
                         className="rounded-circle mb-3"
                         style={{

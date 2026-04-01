@@ -10,6 +10,8 @@ const statusMap = {
   6: { text: "Vắng mặt", badge: "bg-dark" },
 };
 
+const API = "/api";
+
 const getStatusMeta = (status) =>
   statusMap[status] || { text: "Không xác định", badge: "bg-light text-dark" };
 
@@ -65,7 +67,6 @@ const getPaymentMeta = (isPaid) =>
 const isBookingPaid = (booking) => Boolean(booking?.isPaid ?? booking?.paid);
 
 const PetCareHistoryManagement = () => {
-  const [weekStart, setWeekStart] = useState(toDateInput(startOfWeekMonday()));
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -94,7 +95,7 @@ const PetCareHistoryManagement = () => {
   };
 
   const fetchBookingDetail = async (bookingId) => {
-    const res = await fetch(`http://localhost:8080/api/bookings/${bookingId}`, {
+    const res = await fetch(`${API}/bookings/${bookingId}`, {
       credentials: "include",
     });
     const json = await res.json().catch(() => null);
@@ -110,11 +111,12 @@ const PetCareHistoryManagement = () => {
       clearNotice();
 
       const summaryRes = await fetch(
-        `http://localhost:8080/api/bookings/bookings-in-week?startDate=${weekStart}`,
+        `${API}/bookings/all`,
         { credentials: "include" },
       );
-      if (!summaryRes.ok) throw new Error("Không thể tải danh sách lịch hẹn tuần.");
-      const summaryList = await summaryRes.json();
+      if (!summaryRes.ok) throw new Error(`Không thể tải danh sách lịch hẹn. (${summaryRes.status})`);
+      const summaryJson = await summaryRes.json();
+      const summaryList = summaryJson?.data || summaryJson || [];
 
       const detailResults = await Promise.all(
         (summaryList || []).map(async (item) => {
@@ -141,7 +143,7 @@ const PetCareHistoryManagement = () => {
         }),
       );
 
-      const history = detailResults.filter((x) => [0, 1, 2, 3, 4, 5, 6].includes(x.bookingStatus));
+      const history = detailResults.filter((x) => x.bookingStatus === 4);
       setRows(history);
     } catch (e) {
       setError(e.message || "Có lỗi xảy ra.");
@@ -154,7 +156,7 @@ const PetCareHistoryManagement = () => {
   useEffect(() => {
     fetchHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStart]);
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -258,7 +260,7 @@ const PetCareHistoryManagement = () => {
         services: editForm.services,
       };
 
-      const res = await fetch(`http://localhost:8080/api/bookings/${selectedBooking.id}`, {
+      const res = await fetch(`${API}/bookings/${selectedBooking.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -293,10 +295,10 @@ const PetCareHistoryManagement = () => {
       clearNotice();
       const url =
         action === "complete"
-          ? `http://localhost:8080/api/bookings/${row.id}/complete?paymentMethod=PAY_LATER`
+          ? `${API}/bookings/${row.id}/complete?paymentMethod=PAY_LATER`
           : action === "cashPaid"
-            ? `http://localhost:8080/api/bookings/${row.id}/cash-paid`
-          : `http://localhost:8080/api/bookings/${row.id}/${action}`;
+            ? `${API}/bookings/${row.id}/cash-paid`
+          : `${API}/bookings/${row.id}/${action}`;
 
       const res = await fetch(url, { method: "POST", credentials: "include" });
       const json = await res.json().catch(() => null);
@@ -337,7 +339,7 @@ const PetCareHistoryManagement = () => {
 
         <div className="card-body">
           <div className="row mb-3 g-2">
-            <div className="col-md-2">
+            <div className="col-md-5">
               <select
                 className="form-select"
                 value={pageSize}
@@ -351,16 +353,6 @@ const PetCareHistoryManagement = () => {
                 <option value={25}>25 dòng/trang</option>
                 <option value={50}>50 dòng/trang</option>
               </select>
-            </div>
-
-            <div className="col-md-3">
-              <input
-                type="date"
-                className="form-control"
-                value={weekStart}
-                onChange={(e) => setWeekStart(e.target.value)}
-                title="Ngày bắt đầu tuần"
-              />
             </div>
 
             <div className="col-md-7">
@@ -451,72 +443,12 @@ const PetCareHistoryManagement = () => {
                           </td>
                           <td>
                             <button
-                              className="btn btn-info btn-sm me-1 mb-1"
+                              className="btn btn-info btn-sm"
                               onClick={() => openViewModal(r)}
                               title="Xem chi tiết"
                             >
                               <i className="fas fa-eye"></i>
                             </button>
-
-                            {canEdit(r.bookingStatus) && (
-                              <button
-                                className="btn btn-warning btn-sm me-1 mb-1"
-                                onClick={() => openEditModal(r)}
-                                title="Chỉnh sửa lịch"
-                              >
-                                <i className="fas fa-edit"></i>
-                              </button>
-                            )}
-
-                            {canStart(r.bookingStatus) && (
-                              <button
-                                className="btn btn-secondary btn-sm me-1 mb-1"
-                                onClick={() => runStatusAction(r, "start")}
-                                title="Bắt đầu"
-                              >
-                                <i className="fas fa-play"></i>
-                              </button>
-                            )}
-
-                            {canMarkCashPaid(r.bookingStatus, paid) && (
-                              <button
-                                className="btn btn-success btn-sm me-1 mb-1"
-                                onClick={() => runStatusAction(r, "cashPaid")}
-                                title="Xác nhận đã thanh toán tiền mặt"
-                              >
-                                <i className="fas fa-money-bill-wave"></i>
-                              </button>
-                            )}
-
-                            {canComplete(r.bookingStatus) && (
-                              <button
-                                className="btn btn-success btn-sm me-1 mb-1"
-                                onClick={() => runStatusAction(r, "complete")}
-                                title="Hoàn thành"
-                              >
-                                <i className="fas fa-check"></i>
-                              </button>
-                            )}
-
-                            {canNoShow(r.bookingStatus) && (
-                              <button
-                                className="btn btn-dark btn-sm me-1 mb-1"
-                                onClick={() => runStatusAction(r, "noshow")}
-                                title="No-show"
-                              >
-                                <i className="fas fa-user-slash"></i>
-                              </button>
-                            )}
-
-                            {canCancel(r.bookingStatus) && (
-                              <button
-                                className="btn btn-danger btn-sm mb-1"
-                                onClick={() => runStatusAction(r, "cancel")}
-                                title="Hủy"
-                              >
-                                <i className="fas fa-ban"></i>
-                              </button>
-                            )}
                           </td>
                         </tr>
                       );

@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
     setUserRole(null);
     setUser(null);
 
-    fetch("http://localhost:8080/api/Authenticate/logout", {
+    fetch("/api/Authenticate/logout", {
       method: "POST",
       credentials: "include",
     }).catch((err) => console.log("Logout error:", err));

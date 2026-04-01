@@ -131,7 +131,7 @@ const BookingManagement = () => {
     const fetchBookingByCode = async (code) => {
         try {
             setIsScanningAPI(true);
-            const response = await fetch(`http://localhost:8080/api/bookings/code/${code}`, { credentials: 'include' });
+            const response = await fetch(`/api/bookings/code/${code}`, { credentials: 'include' });
             const result = await response.json();
             if (response.ok && result.success && result.data) {
                 setSelectedBooking(result.data); setShowDetailModal(true); showToast('Quét mã thành công!', 'success');
@@ -144,7 +144,7 @@ const BookingManagement = () => {
         if (!searchEmail) return;
         try {
             setSearchingUser(true); setUserSearchError(null); setFoundUser(null);
-            const response = await fetch(`http://localhost:8080/api/user/search?email=${searchEmail}`);
+            const response = await fetch(`/api/user/search?email=${searchEmail}`);
             const result = await response.json();
             if (response.ok && result.success) {
                 setFoundUser(result.data); showToast(`Tìm khách hàng: ${result.data.username}`, 'success');
@@ -156,7 +156,7 @@ const BookingManagement = () => {
         try {
             setLoading(true);
             const startDate = formatDateForAPI(selectedWeekStart);
-            const response = await fetch(`http://localhost:8080/api/bookings/bookings-in-week?startDate=${startDate}`, { credentials: 'include' });
+            const response = await fetch(`/api/bookings/bookings-in-week?startDate=${startDate}`, { credentials: 'include' });
             if (response.ok) { const result = await response.json(); setBookings(result || []); }
         } catch (error) { showToast('Không thể tải dữ liệu lịch!', 'error'); } finally { setLoading(false); }
     };
@@ -164,7 +164,7 @@ const BookingManagement = () => {
     const handleBookingClick = async (bookingId) => {
         try {
             setShowBookingListPopup(false);
-            const response = await fetch(`http://localhost:8080/api/bookings/${bookingId}`, { credentials: 'include' });
+            const response = await fetch(`/api/bookings/${bookingId}`, { credentials: 'include' });
             if (response.ok) {
                 const result = await response.json();
                 if (result.success && result.data) { setSelectedBooking(result.data); setShowDetailModal(true); }
@@ -175,7 +175,7 @@ const BookingManagement = () => {
     const handleUpdateStatus = async (action) => {
         try {
             setUpdatingStatus(true);
-            const response = await fetch(`http://localhost:8080/api/bookings/${selectedBooking.id}/${action}`, { method: 'POST', credentials: 'include' });
+            const response = await fetch(`/api/bookings/${selectedBooking.id}/${action}`, { method: 'POST', credentials: 'include' });
             const result = await response.json();
             if (response.ok && result.success) {
                 showToast(`Cập nhật trạng thái thành công!`, 'success');
@@ -188,7 +188,7 @@ const BookingManagement = () => {
     const handlePaymentConfirm = async () => {
         try {
             setUpdatingStatus(true);
-            const url = `http://localhost:8080/api/bookings/${selectedBooking.id}/complete?paymentMethod=${selectedPaymentMethod}`;
+            const url = `/api/bookings/${selectedBooking.id}/complete?paymentMethod=${selectedPaymentMethod}`;
             const response = await fetch(url, { method: 'POST', credentials: 'include' });
             const result = await response.json();
             
@@ -211,7 +211,7 @@ const BookingManagement = () => {
         if (!window.confirm('Bạn có chắc chắn muốn HỦY/XÓA lịch hẹn này không?')) return;
         try {
             setIsDeleting(true);
-            const response = await fetch(`http://localhost:8080/api/bookings/${selectedBooking.id}`, { method: 'DELETE' });
+            const response = await fetch(`/api/bookings/${selectedBooking.id}`, { method: 'DELETE' });
             const result = await response.json();
             if (response.ok && result.success) {
                 showToast('Đã xóa thành công', 'success'); setShowDetailModal(false); fetchBookings(); 
@@ -223,7 +223,7 @@ const BookingManagement = () => {
     const fetchServicesByPetType = async (petTypeId) => {
         try {
             setLoadingServices(true); setServiceError(null);
-            const response = await fetch(`http://localhost:8080/api/service/pet-type/${petTypeId}`);
+            const response = await fetch(`/api/service/pet-type/${petTypeId}`);
             if (!response.ok) throw new Error('Không thể tải danh sách dịch vụ phù hợp.');
             const data = await response.json();
             setServices(data.data || data); 
@@ -252,7 +252,7 @@ const BookingManagement = () => {
         setFoundUser({ id: selectedBooking.userId, username: selectedBooking.userName, email: selectedBooking.userEmail || '' });
         
         try {
-            const petsRes = await fetch(`http://localhost:8080/api/pet/user/${selectedBooking.userId}`);
+            const petsRes = await fetch(`/api/pet/user/${selectedBooking.userId}`);
             const petsData = await petsRes.json();
             const allPets = petsData.data || petsData;
             setPets(allPets);
@@ -260,7 +260,7 @@ const BookingManagement = () => {
             setSelectedPet(selectedBooking.petId);
             let allServices = [];
             if (currentPet && currentPet.petTypeId) {
-                const srvRes = await fetch(`http://localhost:8080/api/service/pet-type/${currentPet.petTypeId}`);
+                const srvRes = await fetch(`/api/service/pet-type/${currentPet.petTypeId}`);
                 const srvData = await srvRes.json();
                 allServices = srvData.data || srvData;
                 setServices(allServices);
@@ -295,7 +295,7 @@ const BookingManagement = () => {
     const fetchUserPets = async (userId) => {
         try {
             setLoadingPets(true); 
-            const response = await fetch(`http://localhost:8080/api/pet/user/${userId}`);
+            const response = await fetch(`/api/pet/user/${userId}`);
             const result = await response.json();
             if (response.ok && result.success) setPets(result.data);
         } catch (err) { } finally { setLoadingPets(false); }
@@ -304,7 +304,7 @@ const BookingManagement = () => {
     const fetchPetTypes = async () => {
         try {
             setLoadingPetTypes(true);
-            const response = await fetch('http://localhost:8080/api/pet-type');
+            const response = await fetch('/api/pet-type');
             const result = await response.json();
             if (response.ok && result.success) setPetTypes(result.data);
         } catch (err) { } finally { setLoadingPetTypes(false); }
@@ -314,7 +314,7 @@ const BookingManagement = () => {
         try {
             setLoadingSlots(true); setSlotError(null);
             const totalDuration = selectedServices.reduce((sum, service) => sum + service.durationInMinutes, 0);
-            const response = await fetch(`http://localhost:8080/api/bookings/available-slots?selectedDay=${newBookingDate}&durationInMinutes=${totalDuration}`);
+            const response = await fetch(`/api/bookings/available-slots?selectedDay=${newBookingDate}&durationInMinutes=${totalDuration}`);
             const result = await response.json();
             if (response.ok && result.success) setAvailableSlots(result.data);
             else throw new Error(result.message);
@@ -327,7 +327,7 @@ const BookingManagement = () => {
         e.preventDefault();
         try {
             setAddingPet(true); setAddPetError(null);
-            const response = await fetch(`http://localhost:8080/api/pet/user/${foundUser.id}`, {
+            const response = await fetch(`/api/pet/user/${foundUser.id}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: newPet.name, petTypeId: newPet.petTypeId, age: parseInt(newPet.age) })
             });
@@ -346,8 +346,8 @@ const BookingManagement = () => {
         try {
             setSubmitting(true);
             const url = isEditMode 
-                ? `http://localhost:8080/api/bookings/${selectedBooking.id}` 
-                : `http://localhost:8080/api/bookings/user/${foundUser.id}`;
+                ? `/api/bookings/${selectedBooking.id}` 
+                : `/api/bookings/user/${foundUser.id}`;
             const method = isEditMode ? 'PUT' : 'POST';
 
             const response = await fetch(url, {
@@ -366,7 +366,7 @@ const BookingManagement = () => {
     const handleConfirmBooking = async () => {
         try {
             setConfirming(true);
-            const response = await fetch(`http://localhost:8080/api/bookings/${newBookingResult.id}/confirm`, { method: 'POST' });
+            const response = await fetch(`/api/bookings/${newBookingResult.id}/confirm`, { method: 'POST' });
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message);
             

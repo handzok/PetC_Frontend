@@ -109,8 +109,8 @@ const BookingListPage = () => {
         }
 
         const url = petIdFilter
-          ? `http://localhost:8080/api/bookings/me?petId=${petIdFilter}`
-          : "http://localhost:8080/api/bookings/me";
+          ? `/api/bookings/me?petId=${petIdFilter}`
+          : "/api/bookings/me";
 
         const response = await fetch(url, {
           method: "GET",

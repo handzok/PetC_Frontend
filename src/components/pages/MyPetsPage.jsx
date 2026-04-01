@@ -2,13 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = "/api";
 
 const emptyForm = {
   name: "",
   age: "",
   petTypeId: "",
   imageUrl: "",
+  imageFile: null,
+  userId: "",
 };
 
 const MyPetsPage = () => {
@@ -33,7 +35,39 @@ const MyPetsPage = () => {
   const [editForm, setEditForm] = useState(emptyForm);
   const [editingPetId, setEditingPetId] = useState(null);
 
-  // Pagination / Search / Sort
+  const [createFoundUser, setCreateFoundUser] = useState(null);
+  const [createSearchingUser, setCreateSearchingUser] = useState(false);
+  const [editFoundUser, setEditFoundUser] = useState(null);
+  const [editSearchingUser, setEditSearchingUser] = useState(false);
+
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyPet, setHistoryPet] = useState(null);
+  const [historyList, setHistoryList] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const openHistoryModal = async (pet) => {
+    setHistoryPet(pet);
+    setShowHistoryModal(true);
+    setHistoryList([]);
+    setLoadingHistory(true);
+    try {
+      const res = await fetch(`${API_BASE}/bookings?petId=${pet.id}`, {
+        credentials: "include",
+      });
+      const result = await res.json().catch(() => null);
+      setHistoryList(result?.data || []);
+    } catch {
+      setHistoryList([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const closeHistoryModal = () => {
+    setShowHistoryModal(false);
+    setHistoryPet(null);
+    setHistoryList([]);
+  };
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchInput, setSearchInput] = useState("");
@@ -47,20 +81,12 @@ const MyPetsPage = () => {
   };
 
   const fetchPets = async () => {
-    if (!Number.isFinite(currentUserId)) {
-      setError("Vui lòng đăng nhập để xem thú cưng.");
-      setPets([]);
-      return;
-    }
-
     try {
       setLoadingPets(true);
       clearNotice();
 
-      const response = await fetch(`${API_BASE}/pet/user/${currentUserId}`, {
-        method: "GET",
+      const response = await fetch(`${API_BASE}/pet/all`, {
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
       });
 
       const result = await response.json().catch(() => null);
@@ -103,7 +129,6 @@ const MyPetsPage = () => {
     fetchPetTypes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
-
   const openCreateModal = () => {
     clearNotice();
     setCreateForm(emptyForm);
@@ -118,19 +143,25 @@ const MyPetsPage = () => {
       age: String(pet.age ?? ""),
       petTypeId: String(pet.petTypeId ?? ""),
       imageUrl: pet.imageUrl ?? "",
+      imageFile: null,
+      userId: String(pet.userId ?? currentUserId ?? ""),
+      usernameSearch: pet.username ?? "",
     });
+    setEditFoundUser(pet.username ? { selected: { id: pet.userId, username: pet.username } } : null);
     setShowEditModal(true);
   };
 
   const closeCreateModal = () => {
     setShowCreateModal(false);
     setCreateForm(emptyForm);
+    setCreateFoundUser(null);
   };
 
   const closeEditModal = () => {
     setShowEditModal(false);
     setEditingPetId(null);
     setEditForm(emptyForm);
+    setEditFoundUser(null);
   };
 
   const validateForm = (form) => {
@@ -138,6 +169,19 @@ const MyPetsPage = () => {
     if (form.age === "" || Number(form.age) < 0) return "Tuổi không hợp lệ.";
     if (!form.petTypeId) return "Vui lòng chọn loại thú cưng.";
     return "";
+  };
+
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    const result = await res.json().catch(() => null);
+    if (!res.ok || !result?.success) throw new Error(result?.message || "Upload ảnh thất bại.");
+    return `${result.data}`;
   };
 
   const handleCreatePet = async (e) => {
@@ -150,10 +194,19 @@ const MyPetsPage = () => {
       return;
     }
 
+    if (!createForm.userId) {
+      setError("Vui lòng tìm và chọn chủ sở hữu.");
+      return;
+    }
     try {
       setSubmitting(true);
 
-      const response = await fetch(`${API_BASE}/pet/user/${currentUserId}`, {
+      let imageUrl = createForm.imageUrl?.trim() || null;
+      if (createForm.imageFile) {
+        imageUrl = await uploadImage(createForm.imageFile);
+      }
+
+      const response = await fetch(`${API_BASE}/pet/user/${createForm.userId}`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -161,7 +214,7 @@ const MyPetsPage = () => {
           name: createForm.name.trim(),
           age: Number(createForm.age),
           petTypeId: Number(createForm.petTypeId),
-          imageUrl: createForm.imageUrl?.trim() || null,
+          imageUrl,
         }),
       });
 
@@ -198,8 +251,13 @@ const MyPetsPage = () => {
     try {
       setSubmitting(true);
 
+      let imageUrl = editForm.imageUrl?.trim() || null;
+      if (editForm.imageFile) {
+        imageUrl = await uploadImage(editForm.imageFile);
+      }
+
       const response = await fetch(
-        `${API_BASE}/pet/user/${currentUserId}/${editingPetId}`,
+        `${API_BASE}/pet/user/${editForm.userId || currentUserId}/${editingPetId}`,
         {
           method: "PUT",
           credentials: "include",
@@ -208,7 +266,7 @@ const MyPetsPage = () => {
             name: editForm.name.trim(),
             age: Number(editForm.age),
             petTypeId: Number(editForm.petTypeId),
-            imageUrl: editForm.imageUrl?.trim() || null,
+            imageUrl,
           }),
         },
       );
@@ -228,7 +286,7 @@ const MyPetsPage = () => {
     }
   };
 
-  const handleDeletePet = async (petId) => {
+  const handleDeletePet = async (petId, petUserId) => {
     clearNotice();
 
     const ok = window.confirm("Bạn có chắc muốn xóa thú cưng này?");
@@ -238,7 +296,7 @@ const MyPetsPage = () => {
       setSubmitting(true);
 
       const response = await fetch(
-        `${API_BASE}/pet/user/${currentUserId}/${petId}`,
+        `${API_BASE}/pet/user/${petUserId}/${petId}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -259,8 +317,68 @@ const MyPetsPage = () => {
     }
   };
 
-  const renderFormFields = (form, setForm) => (
+  const renderFormFields = (form, setForm, foundUser, setFoundUser, searchingUser, setSearchingUser) => (
     <>
+      <div className="mb-3">
+        <label className="form-label fw-bold">
+          Chủ sở hữu <span className="text-danger">*</span>
+        </label>
+        <div className="position-relative">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Nhập username để tìm..."
+            value={form.usernameSearch ?? ""}
+            autoComplete="off"
+            onChange={async (e) => {
+              const val = e.target.value;
+              setForm({ ...form, usernameSearch: val, userId: "" });
+              setFoundUser(null);
+              if (val.trim().length < 1) { setFoundUser(null); return; }
+              setSearchingUser(true);
+              try {
+                const res = await fetch(`${API_BASE}/user/suggest-username?keyword=${encodeURIComponent(val.trim())}`, { credentials: "include" });
+                const result = await res.json().catch(() => null);
+                setFoundUser({ suggestions: result?.data || [] });
+              } catch {
+                setFoundUser({ suggestions: [] });
+              } finally {
+                setSearchingUser(false);
+              }
+            }}
+          />
+          {searchingUser && (
+            <span className="position-absolute top-50 end-0 translate-middle-y me-2">
+              <span className="spinner-border spinner-border-sm text-secondary" />
+            </span>
+          )}
+          {foundUser?.suggestions?.length > 0 && (
+            <ul className="list-group position-absolute w-100 shadow" style={{ zIndex: 1000, maxHeight: 200, overflowY: "auto" }}>
+              {foundUser.suggestions.map((u) => (
+                <li
+                  key={u.id}
+                  className="list-group-item list-group-item-action"
+                  style={{ cursor: "pointer" }}
+                  onMouseDown={() => {
+                    setForm((f) => ({ ...f, usernameSearch: u.username, userId: String(u.id) }));
+                    setFoundUser({ selected: u });
+                  }}
+                >
+                  <strong>{u.username}</strong> — {u.email}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {foundUser?.selected && (
+          <div className="alert alert-success py-1 mt-2 mb-0">
+            Đã chọn: <strong>{foundUser.selected.username}</strong> — {foundUser.selected.email}
+          </div>
+        )}
+        {foundUser?.suggestions?.length === 0 && form.usernameSearch?.trim() && !searchingUser && (
+          <div className="text-danger small mt-1">Không tìm thấy người dùng.</div>
+        )}
+      </div>
       <div className="mb-3">
         <label className="form-label fw-bold">
           Tên thú cưng <span className="text-danger">*</span>
@@ -308,14 +426,24 @@ const MyPetsPage = () => {
       </div>
 
       <div className="mb-3">
-        <label className="form-label fw-bold">Ảnh (URL)</label>
+        <label className="form-label fw-bold">Ảnh</label>
         <input
-          type="text"
+          type="file"
           className="form-control"
-          value={form.imageUrl}
-          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-          placeholder="https://..."
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files[0] || null;
+            setForm({ ...form, imageFile: file, imageUrl: file ? URL.createObjectURL(file) : form.imageUrl });
+          }}
         />
+        {form.imageUrl && (
+          <img
+            src={form.imageUrl}
+            alt="preview"
+            className="mt-2 rounded"
+            style={{ width: "80px", height: "80px", objectFit: "cover" }}
+          />
+        )}
       </div>
     </>
   );
@@ -521,30 +649,25 @@ const MyPetsPage = () => {
                     <th onClick={() => handleSort("name")} style={{ cursor: "pointer" }}>
                       Tên thú cưng{" "}
                       {sortBy === "name" && (
-                        <i
-                          className={`fas fa-sort-${sortDir === "asc" ? "up" : "down"} ms-1`}
-                        ></i>
+                        <i className={`fas fa-sort-${sortDir === "asc" ? "up" : "down"} ms-1`}></i>
                       )}
                     </th>
 
                     <th onClick={() => handleSort("age")} style={{ cursor: "pointer" }}>
                       Tuổi{" "}
                       {sortBy === "age" && (
-                        <i
-                          className={`fas fa-sort-${sortDir === "asc" ? "up" : "down"} ms-1`}
-                        ></i>
+                        <i className={`fas fa-sort-${sortDir === "asc" ? "up" : "down"} ms-1`}></i>
                       )}
                     </th>
 
                     <th onClick={() => handleSort("petType")} style={{ cursor: "pointer" }}>
                       Loại thú cưng{" "}
                       {sortBy === "petType" && (
-                        <i
-                          className={`fas fa-sort-${sortDir === "asc" ? "up" : "down"} ms-1`}
-                        ></i>
+                        <i className={`fas fa-sort-${sortDir === "asc" ? "up" : "down"} ms-1`}></i>
                       )}
                     </th>
 
+                    <th>Chủ sở hữu</th>
                     <th style={{ width: "240px" }}>Thao tác</th>
                   </tr>
                 </thead>
@@ -590,11 +713,12 @@ const MyPetsPage = () => {
                           <td>{pet.name}</td>
                           <td>{pet.age}</td>
                           <td>{type?.name || `#${pet.petTypeId ?? "-"}`}</td>
+                          <td>{pet.username || "-"}</td>
 
                           <td>
                             <button
                               className="btn btn-info btn-sm me-1"
-                              onClick={() => navigate(`/bookings?petId=${pet.id}`)}
+                              onClick={() => openHistoryModal(pet)}
                               disabled={submitting}
                               title="Lịch sử chăm sóc"
                             >
@@ -612,7 +736,7 @@ const MyPetsPage = () => {
 
                             <button
                               className="btn btn-danger btn-sm"
-                              onClick={() => handleDeletePet(pet.id)}
+                              onClick={() => handleDeletePet(pet.id, pet.userId)}
                               disabled={submitting}
                               title="Xóa"
                             >
@@ -720,7 +844,7 @@ const MyPetsPage = () => {
                       <div className="spinner-border spinner-border-sm text-primary" />
                     </div>
                   ) : (
-                    renderFormFields(createForm, setCreateForm)
+                  renderFormFields(createForm, setCreateForm, createFoundUser, setCreateFoundUser, createSearchingUser, setCreateSearchingUser)
                   )}
                 </div>
                 <div className="modal-footer">
@@ -761,7 +885,7 @@ const MyPetsPage = () => {
                       <div className="spinner-border spinner-border-sm text-primary" />
                     </div>
                   ) : (
-                    renderFormFields(editForm, setEditForm)
+                  renderFormFields(editForm, setEditForm, editFoundUser, setEditFoundUser, editSearchingUser, setEditSearchingUser)
                   )}
                 </div>
                 <div className="modal-footer">
@@ -773,6 +897,62 @@ const MyPetsPage = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* History modal */}
+      {showHistoryModal && (
+        <div
+          className="modal fade show d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Lịch sử chăm sóc: {historyPet?.name}
+                </h5>
+                <button type="button" className="btn-close" onClick={closeHistoryModal} />
+              </div>
+              <div className="modal-body">
+                {loadingHistory ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border" role="status" />
+                  </div>
+                ) : historyList.length === 0 ? (
+                  <p className="text-center text-muted py-3">Chưa có lịch sử chăm sóc.</p>
+                ) : (
+                  <table className="table table-bordered table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Mã booking</th>
+                        <th>Ngày hẹn</th>
+                        <th>Trạng thái</th>
+                        <th>Tổng tiền</th>
+                        <th>Thanh toán</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyList.map((b, idx) => (
+                        <tr key={b.id}>
+                          <td>{idx + 1}</td>
+                          <td>{b.bookingCode || "-"}</td>
+                          <td>{b.scheduledAt ? new Date(b.scheduledAt).toLocaleString("vi-VN") : "-"}</td>
+                          <td>{b.bookingStatus ?? "-"}</td>
+                          <td>{b.totalPrice != null ? Number(b.totalPrice).toLocaleString("vi-VN") + "đ" : "-"}</td>
+                          <td>{b.isPaid ? <span className="badge bg-success">Đã thanh toán</span> : <span className="badge bg-secondary">Chưa thanh toán</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeHistoryModal}>Đóng</button>
+              </div>
             </div>
           </div>
         </div>

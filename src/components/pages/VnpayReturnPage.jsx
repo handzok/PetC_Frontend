@@ -19,7 +19,7 @@ const VnpayReturnPage = () => {
           throw new Error("Thiếu dữ liệu thanh toán từ VNPay");
         }
 
-        const response = await fetch(`http://localhost:8080/api/payments/vnpay/return?${query}`);
+        const response = await fetch(`/api/payments/vnpay/return?${query}`);
         const result = await response.json().catch(() => null);
 
         if (!response.ok || !result?.success) {

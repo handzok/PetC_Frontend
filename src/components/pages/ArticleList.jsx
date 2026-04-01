@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const ArticleList = () => {
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
-    const BACKEND_URL = 'http://localhost:8080';
+    const BACKEND_URL = '';
 
     const resolveImageUrl = (url) => {
         if (!url) return '';
@@ -15,7 +15,7 @@ const ArticleList = () => {
     useEffect(() => {
         const fetchArticles = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/articles');
+                const response = await fetch('/api/articles');
                 const result = await response.json();
                 if (response.ok && result.success) {
                     setArticles(result.data || []);

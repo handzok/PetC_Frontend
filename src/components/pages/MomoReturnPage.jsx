@@ -19,7 +19,7 @@ const MomoReturnPage = () => {
           throw new Error("Thiếu dữ liệu thanh toán từ MoMo");
         }
 
-        const response = await fetch(`http://localhost:8080/api/payments/momo/return?${query}`);
+        const response = await fetch(`/api/payments/momo/return?${query}`);
         const result = await response.json().catch(() => null);
 
         if (!response.ok || !result?.success) {

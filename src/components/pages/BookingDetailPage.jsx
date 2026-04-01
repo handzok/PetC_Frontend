@@ -63,21 +63,21 @@ const BookingDetailPage = () => {
         }
 
         const [bookingResponse, paymentResponse, voucherResponse] = await Promise.all([
-          fetch(`http://localhost:8080/api/bookings/me/${bookingId}`, {
+          fetch(`/api/bookings/me/${bookingId}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
           }),
-          fetch(`http://localhost:8080/api/payments/booking/${bookingId}/summary`, {
+          fetch(`/api/payments/booking/${bookingId}/summary`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
           }),
-          fetch("http://localhost:8080/api/bookings/me/vouchers", {
+          fetch("/api/bookings/me/vouchers", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -127,7 +127,7 @@ const BookingDetailPage = () => {
         throw new Error("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
       }
 
-      const response = await fetch(`http://localhost:8080/api/payments/booking/${bookingId}/init`, {
+      const response = await fetch(`/api/payments/booking/${bookingId}/init`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -174,7 +174,7 @@ const BookingDetailPage = () => {
         throw new Error("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
       }
 
-      const response = await fetch(`http://localhost:8080/api/bookings/me/${bookingId}/cancel`, {
+      const response = await fetch(`/api/bookings/me/${bookingId}/cancel`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -77,7 +77,7 @@ const PetTypeManagement = () => {
                 params.append('Search', search);
             }
 
-            const response = await fetch(`http://localhost:8080/api/pet-type/paginated?${params}`, {
+            const response = await fetch(`/api/pet-type/paginated?${params}`, {
                 credentials: 'include'
             });
 
@@ -129,7 +129,7 @@ const PetTypeManagement = () => {
 
     const handleView = async (id) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/pet-type/${id}`, {
+            const response = await fetch(`/api/pet-type/${id}`, {
                 credentials: 'include'
             });
 
@@ -158,7 +158,7 @@ const PetTypeManagement = () => {
             isActive: petType.isActive
         });
         setImageFile(null);
-        setPreviewImage(petType.image ? `http://localhost:8080${petType.image}` : null);
+        setPreviewImage(petType.image ? `${petType.image}` : null);
         setShowModal(true);
     };
 
@@ -189,7 +189,7 @@ const PetTypeManagement = () => {
                 const uploadData = new FormData();
                 uploadData.append('file', imageFile);
 
-                const uploadRes = await fetch('http://localhost:8080/api/upload', {
+                const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
                     body: uploadData
                 });
@@ -205,7 +205,7 @@ const PetTypeManagement = () => {
 
             let response;
             if (editingPetType) {
-                response = await fetch(`http://localhost:8080/api/pet-type`, {
+                response = await fetch(`/api/pet-type`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -214,7 +214,7 @@ const PetTypeManagement = () => {
                     body: JSON.stringify(finalFormData)
                 });
             } else {
-                response = await fetch(`http://localhost:8080/api/pet-type`, {
+                response = await fetch(`/api/pet-type`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -249,8 +249,8 @@ const PetTypeManagement = () => {
                 try {
                     // Gọi API tương ứng
                     const endpoint = petType.isActive
-                        ? `http://localhost:8080/api/pet-type/soft-delete?id=${petType.id}`
-                        : `http://localhost:8080/api/pet-type/active?id=${petType.id}`;
+                        ? `/api/pet-type/soft-delete?id=${petType.id}`
+                        : `/api/pet-type/active?id=${petType.id}`;
 
                     const response = await fetch(endpoint, {
                         method: 'PATCH',
@@ -435,7 +435,7 @@ const PetTypeManagement = () => {
                                                 <td className="text-center">
                                                     {petType.image ? (
                                                         <img 
-                                                            src={`http://localhost:8080${petType.image}`} 
+                                                            src={`${petType.image}`} 
                                                             alt={petType.name} 
                                                             style={{ width: '60px', height: '60px', objectFit: 'cover' }} 
                                                             className="rounded"
@@ -705,7 +705,7 @@ const PetTypeManagement = () => {
                                 {viewingPetType.image && (
                                     <div className="text-center mb-4">
                                         <img 
-                                            src={`http://localhost:8080${viewingPetType.image}`} 
+                                            src={`${viewingPetType.image}`} 
                                             alt={viewingPetType.name} 
                                             className="img-fluid rounded" 
                                             style={{ maxHeight: '200px', objectFit: 'contain' }}

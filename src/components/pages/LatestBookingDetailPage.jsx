@@ -20,7 +20,7 @@ const LatestBookingDetailPage = () => {
           throw new Error("Vui lòng đăng nhập để xem chi tiết lịch hẹn");
         }
 
-        const response = await fetch("http://localhost:8080/api/bookings/me", {
+        const response = await fetch("/api/bookings/me", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

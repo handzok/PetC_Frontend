@@ -86,7 +86,7 @@ function RegisterPage() {
 
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:8080/api/auth/register", {
+            const res = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -118,7 +118,7 @@ function RegisterPage() {
     const handleGoogleSuccess = async (credentialResponse) => {
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:8080/api/auth/google", {
+            const res = await fetch("/api/auth/google", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include", 

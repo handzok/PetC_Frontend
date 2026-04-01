@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 const ServiceManagement = () => {
-  const BACKEND_URL = "http://localhost:8080";
+  const BACKEND_URL = "";
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);

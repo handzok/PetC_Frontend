@@ -119,7 +119,7 @@ const ArticleDetail = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
-    const BACKEND_URL = 'http://localhost:8080';
+    const BACKEND_URL = '';
 
     const resolveImageUrl = (url) => {
         if (!url) return '';
@@ -131,7 +131,7 @@ const ArticleDetail = () => {
         const fetchArticleDetail = async () => {
             try {
                 setLoading(true);
-                const response = await fetch("http://localhost:8080/api/articles/" + id);
+                const response = await fetch("/api/articles/" + id);
                 const result = await response.json();
                 if (response.ok && result.success) setArticle(result.data);
                 else throw new Error(result.message || "Không tìm thấy bài viết");
@@ -144,7 +144,7 @@ const ArticleDetail = () => {
 
         const fetchComments = async () => {
             try {
-                const res = await fetch("http://localhost:8080/api/articles/" + id + "/comments");
+                const res = await fetch("/api/articles/" + id + "/comments");
                 const resData = await res.json();
                 if (res.ok && resData.success) setComments(resData.data || []);
             } catch (err) {
@@ -170,7 +170,7 @@ const ArticleDetail = () => {
 
         try {
             setSubmitting(true);
-            const response = await fetch("http://localhost:8080/api/articles/" + id + "/comments", {
+            const response = await fetch("/api/articles/" + id + "/comments", {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",

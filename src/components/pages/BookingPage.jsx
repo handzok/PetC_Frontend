@@ -80,7 +80,7 @@ const BookingPage = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8080/api/service");
+      const response = await fetch("/api/service");
       if (!response.ok) throw new Error("Không thể tải danh sách dịch vụ");
       const result = await response.json();
       if (result.success) {
@@ -106,7 +106,7 @@ const BookingPage = () => {
         return;
       }
       const response = await fetch(
-        `http://localhost:8080/api/pet/user/${currentUserId}`,
+        `/api/pet/user/${currentUserId}`,
         { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } },
       );
       if (!response.ok) throw new Error("Không thể tải danh sách thú cưng");
@@ -127,7 +127,7 @@ const BookingPage = () => {
   const fetchPetTypes = async () => {
     try {
       setLoadingPetTypes(true);
-      const response = await fetch("http://localhost:8080/api/pet-type");
+      const response = await fetch("/api/pet-type");
       if (!response.ok) throw new Error("Không thể tải danh sách loại thú cưng");
       const result = await response.json();
       if (result.success) {
@@ -151,7 +151,7 @@ const BookingPage = () => {
         0,
       );
       const response = await fetch(
-        `http://localhost:8080/api/bookings/available-slots?selectedDay=${selectedDate}&durationInMinutes=${totalDuration}`,
+        `/api/bookings/available-slots?selectedDay=${selectedDate}&durationInMinutes=${totalDuration}`,
       );
       if (!response.ok) throw new Error("Không thể tải danh sách khung giờ");
       const result = await response.json();
@@ -172,7 +172,7 @@ const BookingPage = () => {
     try {
       setLoadingVouchers(true);
       setVoucherError(null);
-      const response = await fetch("http://localhost:8080/api/bookings/me/vouchers", {
+      const response = await fetch("/api/bookings/me/vouchers", {
         method: "GET",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
@@ -205,7 +205,7 @@ const BookingPage = () => {
       if (!Number.isFinite(currentUserId))
         throw new Error("Không xác định được người dùng hiện tại");
       const response = await fetch(
-        `http://localhost:8080/api/pet/user/${currentUserId}`,
+        `/api/pet/user/${currentUserId}`,
         {
           method: "POST",
           credentials: "include",
@@ -242,7 +242,7 @@ const BookingPage = () => {
         throw new Error("Vui lòng đăng nhập trước khi đặt lịch");
 
       const response = await fetch(
-        `http://localhost:8080/api/bookings/user/${currentUserId}`,
+        `/api/bookings/user/${currentUserId}`,
         {
           method: "POST",
           credentials: "include",
@@ -283,7 +283,7 @@ const BookingPage = () => {
         paymentCategory === "store" ? "PAY_LATER" : paymentMethod;
 
       const response = await fetch(
-        `http://localhost:8080/api/payments/booking/${bookingResult.id}/init`,
+        `/api/payments/booking/${bookingResult.id}/init`,
         {
           method: "POST",
           headers: {

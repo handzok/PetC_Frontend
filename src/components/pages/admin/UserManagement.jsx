@@ -29,7 +29,7 @@ const UserManagement = () => {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8080/api/user', { credentials: 'include' });
+            const response = await fetch('/api/user', { credentials: 'include' });
             const result = await response.json();
             if (response.ok && result.success) {
                 setUsers(result.data || []);
@@ -43,7 +43,7 @@ const UserManagement = () => {
 
     const fetchRoles = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/user/roles', { credentials: 'include' });
+            const response = await fetch('/api/user/roles', { credentials: 'include' });
             const result = await response.json();
             if (response.ok && result.success) {
                 setRoles(result.data || []);
@@ -60,7 +60,7 @@ const UserManagement = () => {
         setShowRoleModal(true);
         
         try {
-            const response = await fetch(`http://localhost:8080/api/user/${user.id}`, { credentials: 'include' });
+            const response = await fetch(`/api/user/${user.id}`, { credentials: 'include' });
             const result = await response.json();
             // Vì backend trả về mảng currentRoleIds, ta lấy phần tử đầu tiên (nếu có)
             if (response.ok && result.success && result.data.currentRoleIds && result.data.currentRoleIds.length > 0) {
@@ -86,7 +86,7 @@ const UserManagement = () => {
         
         try {
             setUpdating(true);
-            const response = await fetch(`http://localhost:8080/api/user/${selectedUser.id}/roles`, {
+            const response = await fetch(`/api/user/${selectedUser.id}/roles`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

@@ -33,7 +33,7 @@ const VoucherPage = () => {
           throw new Error("Vui lòng đăng nhập để xem voucher");
         }
 
-        const response = await fetch("http://localhost:8080/api/bookings/me/vouchers", {
+        const response = await fetch("/api/bookings/me/vouchers", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

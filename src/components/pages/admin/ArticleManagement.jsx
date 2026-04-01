@@ -19,7 +19,7 @@ const ArticleManagement = () => {
     const [imageUrl, setImageUrl] = useState('');
     const [isPublished, setIsPublished] = useState(true);
 
-    const BACKEND_URL = 'http://localhost:8080'; 
+    const BACKEND_URL = ''; 
 
     const resolveImageUrl = (url) => {
         if (!url) return '';

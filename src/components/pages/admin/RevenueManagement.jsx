@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../AuthContext';
 
-const API = 'http://localhost:8080';
+const API = '';
 
 function formatVnd(amount) {
     if (amount == null) return '0 ₫';

@@ -87,7 +87,7 @@ function LoginPage() {
     setLoading(true);
     try {
       // Gửi Google Token (credential) xuống Backend của bạn
-      const res = await fetch("http://localhost:8080/api/auth/google", {
+      const res = await fetch("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -106,7 +106,7 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: form.username, password: form.password }),
